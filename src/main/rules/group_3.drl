@@ -1,0 +1,38 @@
+package com.test.rules.sl50068453
+
+import java.util.*;
+import java.lang.*;
+import java.util.*;
+import com.test.sumofall.InvokeServicesRequest;
+import com.test.sumofall.LoanRequest;
+import com.test.sumofall.TransactionDetail;
+import com.test.sumofall.PolicySet;
+import com.test.sumofall.WorkingObjectsTransactionDetail;
+
+
+// RS2992.1.15_
+rule "RS2992.1.15_"
+	dialect "java"
+	ruleflow-group "group_3"
+	when
+
+		$invokeServices : 
+		InvokeServicesRequest(  )
+
+		$lendingTransaction : 
+		LoanRequest(  parentId == $invokeServices.myId )
+
+		$transactionDetail : 
+		TransactionDetail(  parentId == $lendingTransaction.myId
+			, workflowGoForwardIndicator == false )
+
+		$policySet : 
+		PolicySet(  parentId == $transactionDetail.myId
+			, overallEligibilityIndicator == false
+			, firings not contains "RS2992.1.15_" )
+
+	then
+		$policySet.setReviewLevel("No Decision");
+		$policySet.getFirings().add("RS2992.1.15_");
+		update($policySet);
+end

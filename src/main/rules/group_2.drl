@@ -1,0 +1,113 @@
+package com.test.rules.sumofall
+
+import java.lang.*;
+import java.util.*;
+import com.test.sumofall.InvokeServicesRequest;
+import com.test.sumofall.LoanRequest;
+import com.test.sumofall.TransactionDetail;
+import com.test.sumofall.PolicySet;
+import com.test.sumofall.WorkingObjectsTransactionDetail;
+
+
+
+rule "RS11533.1.3_"
+	dialect "java"
+	ruleflow-group "group_2"
+	when
+
+		$invokeServices : 
+		InvokeServicesRequest(  )
+
+		$lendingTransaction : 
+		LoanRequest(  parentId == $invokeServices.myId )
+
+		$transactionDetail : 
+		TransactionDetail(  parentId == $lendingTransaction.myId
+			, $totalSubordinateFinancingLoanBalanceAmt : totalSubordinateFinancingLoanBalanceAmt
+			, $totalSubordinateFinancingLineLimitAmt : totalSubordinateFinancingLineLimitAmt )
+
+		$workingTransactionDetail : 
+		WorkingObjectsTransactionDetail(  parentId == $transactionDetail.myId
+			, firings not contains "RS11533.1.3_" )
+
+		$policySet : 
+		PolicySet(  parentId == $transactionDetail.myId
+			, isSetTotalLoanAmt == true
+			, $totalLoanAmt : totalLoanAmt )
+
+
+then
+		$transactionDetail.setTotalSubordinateFinancingLoanBalanceAmt($totalSubordinateFinancingLoanBalanceAmt+1000);
+		$workingTransactionDetail.setTotalCombinedLendingAmt((double)($totalLoanAmt + $totalSubordinateFinancingLoanBalanceAmt + $totalSubordinateFinancingLineLimitAmt));
+		$workingTransactionDetail.getFirings().add("RS11533.1.3_");
+		update($workingTransactionDetail);
+		update($transactionDetail);
+end
+
+
+
+
+rule "RS7587.1.4_"
+	dialect "java"
+	ruleflow-group "group_2"
+	when
+
+		$invokeServices : 
+		InvokeServicesRequest(  )
+
+		$lendingTransaction : 
+		LoanRequest(  parentId == $invokeServices.myId )
+
+		$transactionDetail : 
+		TransactionDetail(  parentId == $lendingTransaction.myId )
+
+		$workingTransactionDetail : 
+		WorkingObjectsTransactionDetail(  parentId == $transactionDetail.myId
+			, firings not contains "RS7587.1.4_" )
+
+// Aggregate function [sum] creates a separate context 
+		$sumOfAll_1 : Double(doubleValue != Double.MAX_VALUE) from accumulate (
+		$invokeServices_C1 : 
+		InvokeServicesRequest(  )
+
+		and
+		$lendingTransaction_C1 : 
+		LoanRequest(  parentId == $invokeServices_C1.myId )
+
+		and
+		$transactionDetail_C1 : 
+		TransactionDetail(  parentId == $lendingTransaction_C1.myId )
+
+		and
+		$policySet_C1 : 
+		PolicySet(  parentId == $transactionDetail_C1.myId
+			, $totalLoanAmt_C1 : totalLoanAmt )
+		sum($totalLoanAmt_C1))
+// end of sum aggregation
+
+// NOT EXISTS creates a separate context.
+		not (
+		$invokeServices_C2 : 
+		InvokeServicesRequest(  )
+
+		and
+		$lendingTransaction_C2 : 
+		LoanRequest(  parentId == $invokeServices_C2.myId )
+
+		and
+		$transactionDetail_C2 : 
+		TransactionDetail(  parentId == $lendingTransaction_C2.myId )
+
+		and
+		$policySet_C2 : 
+		PolicySet(  parentId == $transactionDetail_C2.myId
+			, isSetTotalLoanAmt == false )
+
+		)
+// end of NOT EXISTS
+
+then
+		$workingTransactionDetail.setTotalLoanAmount((double)($sumOfAll_1));
+		$workingTransactionDetail.getFirings().add("RS7587.1.4_");
+		update($workingTransactionDetail);
+end

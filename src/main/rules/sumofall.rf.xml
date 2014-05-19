@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<process xmlns="http://drools.org/drools-5.0/process"
+         xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+         xs:schemaLocation="http://drools.org/drools-5.0/process drools-processes-5.0.xsd"
+         type="RuleFlow" name="RF6365_200" id="278865" package-name="com.test.sumofall.GeneratedRules" version="200" >
+
+  <header>
+    <imports>
+      <import name="com.test.sumofall.InvokeDDServicesRequest" />
+      <import name="com.test.sumofall.TransactionDetail" />
+      <import name="com.test.sumofall.LoanFile" />
+      <import name="com.test.sumofall.WorkingObjectsTransactionDetail" />
+    </imports>
+  </header>
+
+  <nodes>
+    <start id="70004" name="Start" x="61" y="33" width="48" height="48" />
+    <ruleSet id="50068460" name="50068460" x="307" y="31" width="80" height="48" ruleFlowGroup="RF6365_200_50068460" />
+    <ruleSet id="50068424" name="50068424" x="166" y="29" width="80" height="48" ruleFlowGroup="RF6365_200_50068424" />
+    <join id="90004" name="EndJoin90004" x="532" y="80" width="49" height="49" type="2" />
+    <split id="150068441" name="150068441" x="337" y="101" width="49" height="49" type="2" >
+      <constraints>
+        <constraint toNodeId="90004" toType="DROOLS_DEFAULT" name="ServiceFlowCode Equal to Post Rules Processing" priority="1" type="rule" dialect="mvel" >$invokeDDServices : 
+					InvokeDDServicesRequest(  )
+
+					$lendingTransaction : 
+					LoanFile(  parentId == $invokeDDServices.myId )
+
+					$transactionDetail : 
+					TransactionDetail(  parentId == $lendingTransaction.myId )
+
+					$workingTransactionDetail : 
+					WorkingObjectsTransactionDetail(  parentId == $transactionDetail.myId
+						, serviceFlowCode == "Post Rules Processing" )</constraint>
+        <constraint toNodeId="50068453" toType="DROOLS_DEFAULT" name="ServiceFlowCode Not Equal to Post Rules Processing" priority="1" type="rule" dialect="mvel" >$invokeDDServices : 
+					InvokeDDServicesRequest(  )
+
+					$lendingTransaction : 
+					LoanFile(  parentId == $invokeDDServices.myId )
+
+					$transactionDetail : 
+					TransactionDetail(  parentId == $lendingTransaction.myId )
+
+					$workingTransactionDetail : 
+					WorkingObjectsTransactionDetail(  parentId == $transactionDetail.myId
+						, serviceFlowCode != "Post Rules Processing" )</constraint>
+      </constraints>
+    </split>
+    <ruleSet id="50068453" name="50068453" x="315" y="223" width="80" height="48" ruleFlowGroup="RF6365_200_50068453" />
+    <end id="80004" name="End" x="640" y="30" width="48" height="48" />
+  </nodes>
+
+  <connections>
+    <connection from="50068424" to="50068460" />
+    <connection from="70004" to="50068424" />
+    <connection from="150068441" to="90004" />
+    <connection from="50068453" to="90004" />
+    <connection from="50068460" to="150068441" />
+    <connection from="150068441" to="50068453" />
+    <connection from="90004" to="80004" />
+  </connections>
+
+</process>

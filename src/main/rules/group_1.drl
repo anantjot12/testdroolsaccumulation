@@ -1,0 +1,59 @@
+//created on: May 15, 2014
+package com.test.rules.sl50068424
+
+import java.lang.*;
+import java.util.*;
+import java.lang.*;
+import java.util.*;
+import com.test.sumofall.InvokeServicesRequest;
+import com.test.sumofall.LoanRequest;
+import com.test.sumofall.TransactionDetail;
+import com.test.sumofall.PolicySet;
+import com.test.sumofall.WorkingObjectsTransactionDetail;
+
+
+rule "RS6090.1.15_"
+	dialect "java"
+	ruleflow-group "group_1"
+when
+
+		$invokeServices : 
+		InvokeServicesRequest(  )
+
+		$lendingTransaction : 
+		LoanRequest(  parentId == $invokeServices.myId )
+
+		$transactionDetail : 
+		TransactionDetail(  parentId == $lendingTransaction.myId
+			, firings not contains "RS6090.1.15_"
+			, $interestRate : interestRate 
+		 )
+
+// NOT EXISTS creates a separate context.
+		not (
+		$invokeServices_C1 : 
+		InvokeServicesRequest(  )
+
+		and
+		$lendingTransaction_C1 : 
+		LoanRequest(  parentId == $invokeServices_C1.myId )
+
+		and
+		$transactionDetail_C1 : 
+		TransactionDetail(  parentId == $lendingTransaction_C1.myId )
+
+		and
+		$policySet_C1 : 
+		PolicySet(  parentId == $transactionDetail_C1.myId )
+
+		)
+// end of NOT EXISTS
+
+then
+		PolicySet policySet = $transactionDetail.addNewPolicySet();
+		policySet.setInterestRate($interestRate);
+		insert(policySet);
+		System.out.println("insert policyset");
+		$transactionDetail.getFirings().add("RS6090.1.15_");
+		update($transactionDetail);
+end
