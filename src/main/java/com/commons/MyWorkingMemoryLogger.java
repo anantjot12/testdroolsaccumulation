@@ -81,7 +81,6 @@ public class MyWorkingMemoryLogger extends WorkingMemoryLogger{
 				Collection<DefaultFactHandle> psFH = ksession.getFactHandles();
 				for(DefaultFactHandle fh : psFH)
 				{
-					//com.wellsfargo.service.provider.hcfg.entity.financialDetails.x2007.HousingExpense
 					Object obj = ksession.getObject(fh);
 					if(obj instanceof WorkingObjectsTransactionDetail)
 					{
